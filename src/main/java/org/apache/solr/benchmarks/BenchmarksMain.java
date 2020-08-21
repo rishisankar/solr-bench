@@ -45,10 +45,8 @@ import org.apache.solr.benchmarks.beans.QueryBenchmark;
 import org.apache.solr.benchmarks.beans.Repository;
 import org.apache.solr.benchmarks.readers.JsonlFileType;
 import org.apache.solr.benchmarks.solrcloud.SolrCloud;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
@@ -157,7 +155,12 @@ public class BenchmarksMain {
                 for (int threads = benchmark.minThreads; threads <= benchmark.maxThreads; threads++) {
                     QueryGenerator queryGenerator = new QueryGenerator(benchmark);
 
-                    HttpSolrClient client = new HttpSolrClient.Builder(solrCloud.nodes.get(0).getBaseUrl()).build();
+                    SolrClient client;
+                    if (benchmark.useHttp2Client) {
+                        client = new Http2SolrClient.Builder(solrCloud.nodes.get(0).getBaseUrl()).build();
+                    } else {
+                        client = new HttpSolrClient.Builder(solrCloud.nodes.get(0).getBaseUrl()).build();
+                    }
                     ControlledExecutor controlledExecutor = new ControlledExecutor(threads,
                             benchmark.duration,
                             benchmark.rpm,
@@ -197,7 +200,7 @@ public class BenchmarksMain {
         }
     }
 
-    private static Supplier<Runnable> getQuerySupplier(QueryGenerator queryGenerator, HttpSolrClient client, String collection) {
+    private static Supplier<Runnable> getQuerySupplier(QueryGenerator queryGenerator, SolrClient client, String collection) {
         return () -> {
             QueryRequest qr = queryGenerator.nextRequest();
             if (qr == null) return null;

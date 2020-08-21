@@ -53,4 +53,7 @@ public class QueryBenchmark {
 
   @JsonProperty("params")
   public Map<String,String> params = new HashMap<>();
+
+  @JsonProperty("use-http2-client")
+  public Boolean useHttp2Client = false;
 }
